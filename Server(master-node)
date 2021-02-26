@@ -1,0 +1,72 @@
+Go to the folder:
+  #  cd  /etc/kubernetes/pki/
+
+STEP 4. Copy certificate(Here, anuja.csr) from local system(client) to master node of the k8s cluster
+   #  vim anuja.csr
+
+STEP 5. Now, master will sign the certificate 
+   # openssl   x509  -req  -in  anuja.csr   -CA  ca.crt  -CAkey  ca.key  -CAcreateserial -out  anuja.crt
+
+STEP 6. This will generate a certificate named anuja.crt and also ca.crt file in master node(here, i.e, server) of k8s cluster and then we need to transfer in our local system (client).
+                    ...............
+
+STEP 15. Pass SAN (Subject Alternative Name):
+   # openssl x509  -in   apiserver.crt  -text
+
+STEP 16. Now we have to update the certificate
+Remove certificate and private key of api, that we have created before...
+   # rm /etc/kubernetes/pki/apiserver.*
+
+Now, add extra IP..
+  # kubeadm  init  phase certs all  --apiserver-advertise-address=0.0.0.0   --apiserver-cert-extra-sans=< SERVER IP>
+
+we can check , Now SAN have one more extra ip:
+   # openssl x509  -in   apiserver.crt  -text
+
+STEP 17.
+   # docker ps  | grep  api
+
+Delete the Container:
+  #  docker rm -f `docker ps -q -f 'name=k8s_kube-apiserver*'`
+
+  # docker ps  | grep  api
+
+
+Now, Restart the service:
+  # systemctl restart kubelet
+                   .........
+
+STEP 19. Create namespace: 
+   # kubectl   create  ns   tech
+
+To see namespace:
+   # kubectl   get    ns
+
+             .............
+
+STEP 21. Create Role
+   # kubectl   create  role anuja-tech   --resource=pods  --verb=get,list  -n  tech
+ 
+To see role:
+   # kubectl  get   roles    -n  tech
+
+create rolebinding:
+   # kubectl  create   rolebinding   anuja-tech-rb     --role  anuja-tech        --user anuja   -n tech
+
+To see rolebinding:
+   # kubectl  get   rolebinding     -n  tech
+
+TO see details 
+   #  kubectl  describe    rolebinding   anuja-tech-rb  -n tech
+   #  kubectl  describe    role   anuja-tech  -n tech
+
+
+
+STEP 24. Edit the role to have more power:
+  # kubectl  edit   role  anuja-tech  -n  tech
+
+To see details:
+   # kubectl  describe  role  anuja-tech  -n  tech
+
+Now , create deployment in Client system....
+
