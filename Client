@@ -1,0 +1,119 @@
+STEP 1. create a workspace:
+   # mkdir  /kube-ws
+   # cd  /kube-ws/
+
+STEP 2. Generate a private key using Openssl tool:
+   # openssl    genrsa   -out  anuja.key    1024
+
+To see the key
+   # cat anuja.key
+
+STEP 3. Create Certificate(csr) from the above created Private key: 
+   # openssl    req  -new  -key  anuja.key   -out   anuja.csr
+Here, we have to Fill some information ...
+
+To see the certificate
+  # cat anuja.csr
+
+STEP 4. Copy anuja.csr from local system(here) to ( server)master node of the k8s cluster...
+                               ............
+
+STEP 6. Copy anuja.crt here from server(master node) 
+  # vim anuja.crt
+
+STEP 7. Configure yum to install "kubectl"
+
+  cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+  [kubernetes]
+  name=Kubernetes
+  baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+  enabled=1
+  gpgcheck=1
+  repo_gpgcheck=1
+  gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+  EOF
+
+Install kubectl:   
+    # yum install -y kubectl
+
+
+STEP 8. copy the ca.crt file from master node to local system(Here).
+   # vim ca.crt 
+
+
+STEP 9. Now, we have to create kubeconfig file so that we can put details of server(master)..
+   # kubectl  config   --kubeconfig   anuja.kubeconfig        set-cluster awskubecluster  --server  https://<public ip>:6443   --certificate-authority=ca.crt
+
+*Note* the the ip should be of the master node in which master is running. Therefore, we need to take public ip.
+
+   # kubectl config view   --kubeconfig  anuja.kubeconfig
+
+
+Now, see the pod
+  # kubectl   get  pods  --kubeconfig  anuja.kubeconfig
+But, there is error , so we have to specify the host path..
+
+STEP 10. Set credentials:
+   # kubectl   config  --kubeconfig  anuja.kubeconfig  set-credentials  anuja  --client-certificate    anuja.crt   --client-key  anuja.key
+
+
+STEP 11. Set Contexts:
+  # kubectl  config  set-context awskubecluster  --user=anuja
+
+
+STEP 12. Create Contexts:
+   # kubectl  config  set-context anuja@awskubecluster  --user=anuja  --cluster  awskubecluster  --kubeconfig  anuja.kubeconfig
+
+To see the Contexts...
+   # kubectl config  get-contexts  --kubeconfig  anuja.kubeconfig
+
+To see config file...
+  # cat anuja.kubeconfig
+
+STEP 13. See current context..
+    # kubectl config  current-context   --kubeconfig  anuja.kubeconfig
+
+
+Now, Create Current context:
+    # kubectl config  use-context   anuja@awskubecluster    --kubeconfig  anuja.kubeconfig
+
+
+STEP 14. see the pod..
+kubectl   get  pods  --kubeconfig  anuja.kubeconfig
+*But, this time again fail to launch the pod i.e, unable to connect to server(master)...
+
+
+STEP 15. Now we have to pass SAN (Subject Alternative Name).. run in Master(server).....
+                  ........
+
+STEP 18. 
+  #  kubectl   get  pods  --kubeconfig  anuja.kubeconfig
+*This time again fail to launch pod, but it is authenticated.
+
+So we need to create namespace in master(server) ...
+                ................
+
+ STEP 20. 
+   # kubectl   get  pods  --kubeconfig  anuja.kubeconfig    --namespace  tech
+This time again fail but the namespace name changes from default to "tech"
+
+Now we have to create Role and do rolebinding  ..run in master(server)
+
+               .......................
+
+STEP 22. NOW see pods
+   # kubectl   get  pods  --kubeconfig  anuja.kubeconfig    --namespace  tech
+This time not fail, but no resources found ... so we have to create deployment that will launch pod....
+
+
+STEP 23. Create deployment:
+  # kubectl   create deploy  myd  --image=httpd  --kubeconfig  anuja.kubeconfig    --namespace  tech
+But shows error...so we have to edit role to have more permissions /power ...(run in master)
+
+                 ....................
+STEP 25. Now create deployment  
+   # kubectl   create deploy  myd  --image=httpd  --kubeconfig  anuja.kubeconfig    --namespace  tech
+
+STEP 26. 
+  #  kubectl   get  pods   --kubeconfig  anuja.kubeconfig    --namespace  tech
+NOW, we have successfully launched the pod in Client system....
